@@ -69,13 +69,55 @@ int isRoomAvailable(int roomNumber, Date checkInDate, Date checkOutDate) {
     return 1;
 }
 
-void Exit() {
-    printf("Thank You!\n");
-    exit(0);
+int getValidRoomNumber() {
+    int roomNumber;
+    while (1) {
+        printf("Enter room number (1-%d): ", MAX_ROOMS);
+        if (scanf("%d", &roomNumber) != 1 || roomNumber < 1 || roomNumber > MAX_ROOMS) {
+            printf("Invalid input. Please enter a valid room number between 1 and %d.\n", MAX_ROOMS);
+            while (getchar() != '\n'); // Clear buffer
+        } else {
+            return roomNumber;
+        }
+    }
 }
 
-void Employee_Info() {
-    printf("Working...\n");
+void displayBookings() {
+    if (customerCount == 0) {
+        printf("No bookings available.\n");
+        return;
+    }
+
+    printf("Current Bookings:\n");
+    for (int i = 0; i < customerCount; i++) {
+        printf("Customer: %s, Room: %d, Check-in: %d/%d/%d, Check-out: %d/%d/%d, Checked-in: %s\n",
+               customers[i].name, customers[i].roomNumber,
+               customers[i].checkInDate.day, customers[i].checkInDate.month, customers[i].checkInDate.year,
+               customers[i].checkOutDate.day, customers[i].checkOutDate.month, customers[i].checkOutDate.year,
+               customers[i].isCheckedIn ? "Yes" : "No");
+    }
+}
+
+void cancelBooking() {
+    if (customerCount == 0) {
+        printf("No bookings available to cancel.\n");
+        return;
+    }
+
+    int roomNumber = getValidRoomNumber();
+
+    for (int i = 0; i < customerCount; i++) {
+        if (customers[i].roomNumber == roomNumber) {
+            // Shift all subsequent customers to "remove" the canceled one
+            for (int j = i; j < customerCount - 1; j++) {
+                customers[j] = customers[j + 1];
+            }
+            customerCount--; // Decrease the customer count
+            printf("Booking for room %d has been canceled.\n", roomNumber);
+            return;
+        }
+    }
+    printf("No booking found for room %d.\n", roomNumber);
 }
 
 void Check_In() {
@@ -84,19 +126,20 @@ void Check_In() {
         return;
     }
 
-    int roomNumber;
-    printf("Enter room number for check-in: ");
-    scanf("%d", &roomNumber);
+    int roomNumber = getValidRoomNumber();
 
     for (int i = 0; i < customerCount; i++) {
-        if (customers[i].roomNumber == roomNumber && !customers[i].isCheckedIn) {
-            customers[i].isCheckedIn = 1;
-            printf("Check-in successful for %s in room number %d.\n", customers[i].name, customers[i].roomNumber);
+        if (customers[i].roomNumber == roomNumber) {
+            if (customers[i].isCheckedIn) {
+                printf("Customer %s is already checked in.\n", customers[i].name);
+            } else {
+                customers[i].isCheckedIn = 1;
+                printf("Check-in successful for %s in room number %d.\n", customers[i].name, customers[i].roomNumber);
+            }
             return;
         }
     }
-
-    printf("No booking found for the given room number or the customer is already checked in.\n");
+    printf("No booking found for the given room number.\n");
 }
 
 void Check_Out() {
@@ -105,9 +148,7 @@ void Check_Out() {
         return;
     }
 
-    int roomNumber;
-    printf("Enter room number for check-out: ");
-    scanf("%d", &roomNumber);
+    int roomNumber = getValidRoomNumber();
 
     for (int i = 0; i < customerCount; i++) {
         if (customers[i].roomNumber == roomNumber && customers[i].isCheckedIn) {
@@ -129,20 +170,8 @@ void Room_Booking() {
     Customer newCustomer;
     printf("\nEnter customer name: ");
     scanf("%49s", newCustomer.name);
-    
-    do {
-        printf("Enter room number (1-%d): ", MAX_ROOMS);
-        if (scanf("%d", &newCustomer.roomNumber) != 1) {
-            printf("Invalid input. Please enter a number.\n");
-            while (getchar() != '\n');  // Clear the input buffer
-            continue;
-        }
-        if (newCustomer.roomNumber < 1 || newCustomer.roomNumber > MAX_ROOMS) {
-            printf("Invalid room number. Please enter a number between 1 and %d.\n", MAX_ROOMS);
-        }
-    } while (newCustomer.roomNumber < 1 || newCustomer.roomNumber > MAX_ROOMS);
 
-    while (getchar() != '\n');  // Clear the input buffer after reading room number
+    newCustomer.roomNumber = getValidRoomNumber();
 
     do {
         printf("Enter check-in date (dd mm yyyy): ");
@@ -177,7 +206,7 @@ void Room_Avlbt() {
     Date checkInDate, checkOutDate;
 
     printf("\nEnter room number: ");
-    scanf("%d", &roomNumber);
+    roomNumber = getValidRoomNumber();
 
     do {
         printf("Enter check-in date (dd mm yyyy): ");
@@ -215,27 +244,22 @@ void Service() {
         printf("4. 24/7 Customer Service\n");
         printf("5. Return to Main Menu\n");
         printf("6. Exit\n");
-        
+
         printf("Enter Your Choice: ");
         scanf("%d", &x);
 
         switch (x) {
             case 1:
-                printf("Available");
-                break;
             case 2:
-                printf("Available");
-                break;
             case 3:
-                printf("Available");
-                break;
             case 4:
-                printf("Available");
+                printf("Available\n");
                 break;
             case 5:
                 return;
             case 6:
-                Exit();
+                printf("Thank You!\n");
+                exit(0);
                 break;
             default:
                 printf("Invalid input. Please try again.\n");
@@ -261,9 +285,10 @@ int main() {
         printf("3. Room Availability\n");
         printf("4. Check In\n");
         printf("5. Check Out\n");
-        printf("6. Employee Information\n");
-        printf("7. Services\n");
-        printf("8. Exit\n");
+        printf("6. Cancel Booking\n");
+        printf("7. Display All Bookings\n");
+        printf("8. Services\n");
+        printf("9. Exit\n");
 
         printf("Enter Your Choice: ");
         scanf("%d", &choice);
@@ -285,13 +310,17 @@ int main() {
                 Check_Out();
                 break;
             case 6:
-                Employee_Info();
+                cancelBooking();
                 break;
             case 7:
-                Service();
+                displayBookings();
                 break;
             case 8:
-                Exit();
+                Service();
+                break;
+            case 9:
+                printf("Thank You!\n");
+                exit(0);
                 break;
             default:
                 printf("Invalid input. Please try again.\n");
